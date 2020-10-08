@@ -7,7 +7,9 @@
 	],
 	"globals": {
 		"jQuery": false,
-		"mediaWiki": false,
-		"OO": false
+		"mediaWiki": false
+	},
+	"rules": {
+		"no-shadow": "warn"
 	}
 }
