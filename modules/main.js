@@ -5,6 +5,12 @@
 		target = mw.config.get( 'ExternalLinkConfirmTarget' ),
 		defaultTarget = mw.config.get( 'ExternalLinkConfirmDefaultTarget' );
 
+	function getHostname( url ) {
+		var a = document.createElement( 'a' );
+		a.href = url;
+		return a.hostname;
+	}
+
 	function getWildcardMatchedDomain( listDomains, domain ) {
 		var domainPieces = domain.split( '.' ),
 			valid, listedDomain, listedDomainPieces, i, k, piece;
@@ -37,12 +43,6 @@
 	}
 
 	function isWhitelistedDomain( domain ) {
-		var currentHost = new mw.Uri().host;
-
-		if ( domain === currentHost ) {
-			return true;
-		}
-
 		if ( whitelist.length === 0 ) {
 			return false;
 		}
@@ -60,20 +60,21 @@
 		return defaultTarget;
 	}
 
-	function openLink( href, host ) {
-		var target = getTargetForDomain( host );
+	function openLink( href, host, target ) {
+		if ( target === undefined ) {
+			target = getTargetForDomain( host );
+		}
 
 		window.open( href, target );
 	}
 
 	function onHandledLinkClick( e ) {
 		var href = $( this ).data( 'ExternalLinkConfirmHref' ),
-			host = new mw.Uri( href ).host,
+			host = getHostname( href ),
 			allowed = isWhitelistedDomain( host ),
 			options;
 
 		e.preventDefault();
-
 		if ( allowed ) {
 			openLink( href, host );
 		} else {
@@ -100,12 +101,18 @@
 
 		$unhandledLinks
 			.each( function () {
-				var $element = $( this );
-				$element.data( 'ExternalLinkConfirmHref', $element.attr( 'href' ) );
-				$element.off( 'click' );
+				var $element = $( this ),
+					href = $element.attr( 'href' ),
+					hrefHost = getHostname( href );
+
+				if ( hrefHost !== window.location.hostname ) {
+					$element
+						.data( 'ExternalLinkConfirmHref', href )
+						.attr( 'href', '' )
+						.off( 'click' )
+						.on( 'click', onHandledLinkClick );
+				}
 			} )
-			.on( 'click', onHandledLinkClick )
-			.attr( 'href', '' )
 			.addClass( 'ExternalLinkConfirmHandled' );
 	}
 

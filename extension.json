@@ -27,7 +27,6 @@
 		"ext.ExternalLinkConfirm": {
 			"scripts": "main.js",
 			"dependencies": [
-				"mediawiki.Uri",
 				"oojs-ui"
 			],
 			"messages": [
