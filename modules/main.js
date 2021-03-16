@@ -61,11 +61,14 @@
 	}
 
 	function openLink( href, host, target ) {
+		var otherWindow;
+
 		if ( target === undefined ) {
 			target = getTargetForDomain( host );
 		}
 
-		window.open( href, target );
+		otherWindow = window.open( href, target );
+		otherWindow.opener = null; // Detach opened web page
 	}
 
 	function onHandledLinkClick( e ) {
