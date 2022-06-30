@@ -2,8 +2,10 @@
 	'use strict';
 
 	var whitelist = mw.config.get( 'ExternalLinkConfirmWhitelist' ),
-		target = mw.config.get( 'ExternalLinkConfirmTarget' ),
-		defaultTarget = mw.config.get( 'ExternalLinkConfirmDefaultTarget' );
+		domainTarget = mw.config.get( 'ExternalLinkConfirmTarget' ),
+		defaultTarget = mw.config.get( 'ExternalLinkConfirmDefaultTarget' ),
+		poolToHandle = [],
+		handlePoolDebounced;
 
 	function getHostname( url ) {
 		var a = document.createElement( 'a' );
@@ -51,11 +53,11 @@
 	}
 
 	function getTargetForDomain( domain ) {
-		var targetKeys = Object.keys( target ),
+		var targetKeys = Object.keys( domainTarget ),
 			key = getWildcardMatchedDomain( targetKeys, domain );
 
 		if ( key !== false ) {
-			return target[ key ];
+			return domainTarget[ key ];
 		}
 		return defaultTarget;
 	}
@@ -100,26 +102,55 @@
 	 * @param {jQuery} $element
 	 */
 	function handleExternalLinks( $element ) {
-		var $unhandledLinks = $element.find( 'a[href*="//"]:not( .ExternalLinkConfirmHandled )' );
+		var $unhandledLinks, href;
 
-		$unhandledLinks
-			.each( function () {
-				var $element = $( this ),
-					href = $element.attr( 'href' ),
-					hrefHost = getHostname( href );
+		if ( $element.prop( 'tagName' ) === 'A' ) {
+			href = $element.attr( 'href' );
+			// eslint-disable-next-line no-jquery/no-class-state
+			if ( $element.hasClass( 'ExternalLinkConfirmHandled' ) || !href || href.indexOf( '//' ) === -1 ) {
+				return;
+			}
+			$unhandledLinks = $element;
+		} else {
+			$unhandledLinks = $element.find( 'a[href*="//"]:not( .ExternalLinkConfirmHandled )' );
+		}
 
-				if ( hrefHost !== window.location.hostname ) {
-					$element
-						.data( 'ExternalLinkConfirmHref', href )
-						.attr( 'href', '' )
-						.off( 'click' )
-						.on( 'click', onHandledLinkClick );
-				}
-			} )
-			.addClass( 'ExternalLinkConfirmHandled' );
+		if ( $unhandledLinks.length > 0 ) {
+			$unhandledLinks
+				.each( function () {
+					var $el = $( this ),
+						hr = $el.attr( 'href' ),
+						hrefHost = getHostname( hr );
+
+					if ( hrefHost !== window.location.hostname ) {
+						$el
+							.data( 'ExternalLinkConfirmHref', hr )
+							.attr( 'href', '' )
+							.off( 'click' )
+							.on( 'click', onHandledLinkClick );
+					}
+				} )
+				.addClass( 'ExternalLinkConfirmHandled' );
+		}
 	}
 
 	mw.hook( 'wikipage.content' ).add( handleExternalLinks );
+
+	function handlePool() {
+		var elem;
+
+		while ( typeof ( elem = poolToHandle.shift() ) !== 'undefined' ) {
+			handleExternalLinks( $( elem ) );
+		}
+	}
+
+	handlePoolDebounced = OO.ui.debounce( handlePool, 100 );
+
+	$( window ).on( 'DOMNodeInserted', function ( event ) {
+		poolToHandle.push( event.target );
+		handlePoolDebounced();
+	} );
+
 	// eslint-disable-next-line no-jquery/no-global-selector
 	handleExternalLinks( $( 'body' ) );
 
