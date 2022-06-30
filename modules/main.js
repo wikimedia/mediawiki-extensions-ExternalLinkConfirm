@@ -76,13 +76,6 @@
 	function onHandledLinkClick( e ) {
 		var href = $( this ).data( 'ExternalLinkConfirmHref' ),
 			host = getHostname( href ),
-			allowed = isWhitelistedDomain( host ),
-			options;
-
-		e.preventDefault();
-		if ( allowed ) {
-			openLink( href, host );
-		} else {
 			options = {
 				actions: [
 					// Note that OO.ui.alert() and OO.ui.confirm() rely on these.
@@ -90,12 +83,14 @@
 					{ action: 'reject', label: OO.ui.deferMsg( 'externallinkconfirm-confirmation-reject' ), flags: 'safe' }
 				]
 			};
-			OO.ui.confirm( mw.msg( 'externallinkconfirm-confirmation-message' ), options ).done( function ( confirmed ) {
-				if ( confirmed ) {
-					openLink( href, host );
-				}
-			} );
-		}
+
+		e.preventDefault();
+
+		OO.ui.confirm( mw.msg( 'externallinkconfirm-confirmation-message' ), options ).done( function ( confirmed ) {
+			if ( confirmed ) {
+				openLink( href, host );
+			}
+		} );
 	}
 
 	/**
@@ -120,14 +115,21 @@
 				.each( function () {
 					var $el = $( this ),
 						hr = $el.attr( 'href' ),
-						hrefHost = getHostname( hr );
+						hrefHost = getHostname( hr ),
+						target = getTargetForDomain( hrefHost );
 
 					if ( hrefHost !== window.location.hostname ) {
-						$el
-							.data( 'ExternalLinkConfirmHref', hr )
-							.attr( 'href', '' )
-							.off( 'click' )
-							.on( 'click', onHandledLinkClick );
+						if ( isWhitelistedDomain( hrefHost ) ) {
+							// Don't use onHandledLinkClick for whitelisted domains
+							// but use defined target
+							$el.attr( 'target', target );
+						} else {
+							$el
+								.data( 'ExternalLinkConfirmHref', hr )
+								.attr( 'href', '' )
+								.off( 'click' )
+								.on( 'click', onHandledLinkClick );
+						}
 					}
 				} )
 				.addClass( 'ExternalLinkConfirmHandled' );
