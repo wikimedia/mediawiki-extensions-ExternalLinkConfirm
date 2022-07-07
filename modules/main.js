@@ -62,35 +62,23 @@
 		return defaultTarget;
 	}
 
-	function openLink( href, host, target ) {
-		var otherWindow;
+	function openLink( href ) {
+		var host = getHostname( href ),
+			target = getTargetForDomain( host ),
+			otherWindow = window.open( href, target );
 
-		if ( target === undefined ) {
-			target = getTargetForDomain( host );
-		}
-
-		otherWindow = window.open( href, target );
 		otherWindow.opener = null; // Detach opened web page
 	}
 
 	function onHandledLinkClick( e ) {
-		var href = $( this ).data( 'ExternalLinkConfirmHref' ),
-			host = getHostname( href ),
-			options = {
-				actions: [
-					// Note that OO.ui.alert() and OO.ui.confirm() rely on these.
-					{ action: 'accept', label: OO.ui.deferMsg( 'externallinkconfirm-confirmation-accept' ), flags: 'primary' },
-					{ action: 'reject', label: OO.ui.deferMsg( 'externallinkconfirm-confirmation-reject' ), flags: 'safe' }
-				]
-			};
+		var href = $( this ).data( 'ExternalLinkConfirmHref' );
 
 		e.preventDefault();
 
-		OO.ui.confirm( mw.msg( 'externallinkconfirm-confirmation-message' ), options ).done( function ( confirmed ) {
-			if ( confirmed ) {
-				openLink( href, host );
-			}
-		} );
+		// eslint-disable-next-line no-alert
+		if ( confirm( mw.msg( 'externallinkconfirm-confirmation-message' ) ) ) {
+			openLink( href );
+		}
 	}
 
 	/**
