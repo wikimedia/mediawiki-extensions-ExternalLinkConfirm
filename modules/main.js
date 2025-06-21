@@ -1,20 +1,20 @@
 ( function () {
 	'use strict';
 
-	var whitelist = mw.config.get( 'ExternalLinkConfirmWhitelist' ),
+	let whitelist = mw.config.get( 'ExternalLinkConfirmWhitelist' ),
 		domainTarget = mw.config.get( 'ExternalLinkConfirmTarget' ),
 		defaultTarget = mw.config.get( 'ExternalLinkConfirmDefaultTarget' ),
 		poolToHandle = [],
 		handlePoolDebounced;
 
 	function getHostname( url ) {
-		var a = document.createElement( 'a' );
+		const a = document.createElement( 'a' );
 		a.href = url;
 		return a.hostname;
 	}
 
 	function getWildcardMatchedDomain( listDomains, domain ) {
-		var domainPieces = domain.split( '.' ),
+		let domainPieces = domain.split( '.' ),
 			valid, listedDomain, listedDomainPieces, i, k, piece;
 
 		if ( listDomains.length === 0 ) {
@@ -53,7 +53,7 @@
 	}
 
 	function getTargetForDomain( domain ) {
-		var targetKeys = Object.keys( domainTarget ),
+		const targetKeys = Object.keys( domainTarget ),
 			key = getWildcardMatchedDomain( targetKeys, domain );
 
 		if ( key !== false ) {
@@ -63,7 +63,7 @@
 	}
 
 	function openLink( href ) {
-		var host = getHostname( href ),
+		const host = getHostname( href ),
 			target = getTargetForDomain( host ),
 			otherWindow = window.open( href, target );
 
@@ -71,7 +71,7 @@
 	}
 
 	function onHandledLinkClick( e ) {
-		var href = $( this ).data( 'ExternalLinkConfirmHref' );
+		const href = $( this ).data( 'ExternalLinkConfirmHref' );
 
 		e.preventDefault();
 
@@ -85,12 +85,12 @@
 	 * @param {jQuery} $element
 	 */
 	function handleExternalLinks( $element ) {
-		var $unhandledLinks, href;
+		let $unhandledLinks, href;
 
 		if ( $element.prop( 'tagName' ) === 'A' ) {
 			href = $element.attr( 'href' );
 			// eslint-disable-next-line no-jquery/no-class-state
-			if ( $element.hasClass( 'ExternalLinkConfirmHandled' ) || !href || href.indexOf( '//' ) === -1 ) {
+			if ( $element.hasClass( 'ExternalLinkConfirmHandled' ) || !href || !href.includes( '//' ) ) {
 				return;
 			}
 			$unhandledLinks = $element;
@@ -101,7 +101,7 @@
 		if ( $unhandledLinks.length > 0 ) {
 			$unhandledLinks
 				.each( function () {
-					var $el = $( this ),
+					const $el = $( this ),
 						hr = $el.attr( 'href' ),
 						hrefHost = getHostname( hr ),
 						target = getTargetForDomain( hrefHost );
@@ -127,7 +127,7 @@
 	mw.hook( 'wikipage.content' ).add( handleExternalLinks );
 
 	function handlePool() {
-		var elem;
+		let elem;
 
 		while ( typeof ( elem = poolToHandle.shift() ) !== 'undefined' ) {
 			handleExternalLinks( $( elem ) );
@@ -136,7 +136,7 @@
 
 	handlePoolDebounced = OO.ui.debounce( handlePool, 100 );
 
-	$( window ).on( 'DOMNodeInserted', function ( event ) {
+	$( window ).on( 'DOMNodeInserted', ( event ) => {
 		poolToHandle.push( event.target );
 		handlePoolDebounced();
 	} );
